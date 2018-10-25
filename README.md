@@ -240,122 +240,20 @@ The handler class is implemented in [a file with the same name `SdIRiceviFileHan
 
 Tested on: amd64 Debian 9.5 (stretch, current stable) with PHP 7.0 and Laravel 5.5.44.
 
-### Prerequisites
-
-Install prerequisites:
-```sh
-sudo apt install php-cli php-fpm nginx php-soap php-mbstring php-dom php-zip composer nginx postgresql php-pgsql php-curl php-xml
-```
-
 ### Configuring and Installing
 
 Clone the repo into the `/var/www/html` directory on your webserver. 
 
 ```sh
-cd /var/www/html
-git clone https://github.com/italia/fatturapa-testsdi .
-```
-
-Install prerequisites with composer:
-
-```sh
-cd /var/www/html
-composer install
-```
-
-Configure the database:
-
-1. in `/etc/postgresql/9.6/main/pg_hba.conf` add this line:
-```
-local   testsdi         www-data                                md5
-```
-  **before** this one:
-```
-# "local" is for Unix domain socket connections only
-local   all             all                                     peer
-```
-
-2. restart postgresql with: `sudo systemctl restart postgresql`
-
-3. Create the database:
-```sh
-sudo su - postgres
-psql
-CREATE USER "www-data" WITH PASSWORD 'www-data';
-CREATE DATABASE testsdi OWNER "www-data";
-^d
-^d
-```
-
-You'll be able to access the database with:
-```sh
-PGPASSWORD="www-data" psql -U www-data testsdi
-```
-
-Configure database credentials in `core/config.php` and in `rpc/config/database.php`.
-
-Configure `HOSTNAME` in `soap/config.php` and in `core/config.php`.
-
-Set up Laravel:
-```sh
-cd /var/www/html
+git clone https://github.com/italia/fatturapa-testsdi sdi
+cd sdi
+docker-compose up --build
+docker exec -ti sdi_php bash
+cd sdi
 make
-php artisan key:generate
-^d
 ```
 
-Configure nginx:
-```sh
-sudo rm /etc/nginx/sites-enabled/*
-sudo vi /etc/nginx/sites-enabled/fatturapa
-```
-
-Set the contents of the `/etc/nginx/sites-enabled/fatturapa` file to something like:
-```
-server {
-  listen 80 default_server;
-  listen [::]:80 default_server;
-  server_name testsdi.simevo.com;
-  root /var/www/html;
-  index index.html index.htm index.php;
-  location ~ \.php$ {
-    include snippets/fastcgi-php.conf;
-    fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
-    fastcgi_read_timeout 300;
-    fastcgi_param SDI_DB_HOST localhost;
-    fastcgi_param SDI_DB_NAME testsdi;
-    fastcgi_param SDI_DB_USER www-data;
-    fastcgi_param SDI_DB_PASS www-data;
-    fastcgi_param SDI_HOST_MAIN https://teamdigitale3.simevo.com/;
-  }
-  location ^~ /sdi/rpc/js/ {
-    alias /var/www/html/rpc/packages/fatturapa/ui/src/public/js/;
-  }
-  location ^~ /sdi/rpc/css/ {
-    alias /var/www/html/rpc/packages/fatturapa/ui/src/public/css/;
-  }
-  location ^~ /sdi/rpc/webfonts/ {
-    alias /var/www/html/rpc/packages/fatturapa/ui/src/public/webfonts/;
-  }
-  location ^~ /sdi/rpc/font/ {
-    alias /var/www/html/rpc/packages/fatturapa/ui/src/public/font/;
-  }
-  location ~ /.*/rpc {
-    try_files $uri $uri/ /rpc/index.php?$query_string;
-  }
-  location ~ /.*/soap {
-    try_files $uri $uri/ /soap/index.php;
-  }
-}
-```
-
-Finally check the configuration and restart nginx:
-```sh
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
-At this point you should be able to access the UI at: https://testsdi.example.com/sdi/rpc/dashboard
+At this point you should be able to access the UI at http://localhost:8081/sdi/rpc/dashboard and to adminer at http://localhost:8082.
 
 Dynamic routing makes sure that the RPC endpoints for the actors will be reachable at:
 - `/sdi` - the Exchange System (there's only one)
@@ -371,17 +269,17 @@ INSERT INTO channels(cedente, issuer) VALUES ('IT-23456789012', '0000003');
 ```
 your SOAP endpoints will be at:
 - exchange
-  - https://www.example.com/sdi/soap/SdIRiceviFile
-  - https://www.example.com/sdi/soap/SdIRiceviNotifica
+  - http://localhost:8081/sdi/soap/SdIRiceviFile
+  - http://localhost:8081/sdi/soap/SdIRiceviNotifica
 - issuer / recipient 0000001:
-  - https://www.example.com/td0000001/soap/RicezioneFatture
-  - https://www.example.com/td0000001/soap/TrasmissioneFatture
+  - http://localhost:8081/td0000001/soap/RicezioneFatture
+  - http://localhost:8081/td0000001/soap/TrasmissioneFatture
 - issuer / recipient 0000002:
-  - https://www.example.com/td0000002/soap/RicezioneFatture
-  - https://www.example.com/td0000002/soap/TrasmissioneFatture
+  - http://localhost:8081/td0000002/soap/RicezioneFatture
+  - http://localhost:8081/td0000002/soap/TrasmissioneFatture
 - issuer / recipient 0000003:
-  - https://www.example.com/td0000003/soap/RicezioneFatture
-  - https://www.example.com/td0000003/soap/TrasmissioneFatture
+  - http://localhost:8081/td0000003/soap/RicezioneFatture
+  - http://localhost:8081/td0000003/soap/TrasmissioneFatture
 
 ### Demo
 
@@ -389,86 +287,86 @@ Sample manual session to demonstrate the flow of one invoice from issuer 0000001
 
 1. clear status
 ```
-POST https://www.example.com/sdi/rpc/clear
-POST https://www.example.com/td0000001/rpc/clear
-POST https://www.example.com/td0000002/rpc/clear
+POST http://localhost:8081/sdi/rpc/clear
+POST http://localhost:8081/td0000001/rpc/clear
+POST http://localhost:8081/td0000002/rpc/clear
 ```
 
 2. create a valid sample invoice for TD 0000002 (`FatturaElettronica.FatturaElettronicaHeader.DatiTrasmissione.CodiceDestinatario` should be set to `0000002`) and upload it to TD 0000001, then check it is in the right queue
 
 ```
-POST https://www.example.com/td0000001/rpc/upload {file XML}
-GET https://www.example.com/td0000001/rpc/invoices?status=I_UPLOADED
+POST http://localhost:8081/td0000001/rpc/upload {file XML}
+GET http://localhost:8081/td0000001/rpc/invoices?status=I_UPLOADED
 ```
 
 3. force transmission to ES and check status:
 ```
-POST https://www.example.com/td0000001/rpc/transmit
+POST http://localhost:8081/td0000001/rpc/transmit
 ```
 
 4. Check status with ES (the invoice should be in the E_RECEIVED queue):
 ```
-GET https://www.example.com/sdi/rpc/invoices?status=E_RECEIVED
+GET http://localhost:8081/sdi/rpc/invoices?status=E_RECEIVED
 ```
 
 5. Check status with TD 0000001 (the invoice should be in the I_TRANSMITTED queue):
 ```
-GET https://www.example.com/td0000001/rpc/invoices?status=I_TRANSMITTED
+GET http://localhost:8081/td0000001/rpc/invoices?status=I_TRANSMITTED
 ```
 
 6. force validation by ES and check status:
 ```
-POST https://www.example.com/sdi/rpc/checkValidity
-GET https://www.example.com/sdi/rpc/invoices?status=E_VALID
+POST http://localhost:8081/sdi/rpc/checkValidity
+GET http://localhost:8081/sdi/rpc/invoices?status=E_VALID
 ```
 
 7. force transmission from ES to recipient and check status:
 ```
-POST https://www.example.com/sdi/rpc/deliver
-GET https://www.example.com/sdi/rpc/invoices?status=E_DELIVERED
-GET https://www.example.com/sdi/td0000002/invoices?status=R_RECEIVED
-GET https://www.example.com/td0000001/rpc/invoices?status=I_DELIVERED (no response yet because ES has not notified to issuer)
+POST http://localhost:8081/sdi/rpc/deliver
+GET http://localhost:8081/sdi/rpc/invoices?status=E_DELIVERED
+GET http://localhost:8081/sdi/td0000002/invoices?status=R_RECEIVED
+GET http://localhost:8081/td0000001/rpc/invoices?status=I_DELIVERED (no response yet because ES has not notified to issuer)
 ```
 
 8. force ES to dispatch back the notification to the issuer:
 ```
-POST https://www.example.com/sdi/rpc/dispatch
+POST http://localhost:8081/sdi/rpc/dispatch
 ```
 
 9. check notification and status, now for the issuer TD 0000001 the invoice should be in the I_DELIVERED queue:
 ```
-GET https://www.example.com/td0000001/rpc/notifications/id
-GET https://www.example.com/td0000001/rpc/invoices?status=I_DELIVERED
+GET http://localhost:8081/td0000001/rpc/notifications/id
+GET http://localhost:8081/td0000001/rpc/invoices?status=I_DELIVERED
 ```
 
 10. make recipient accept invoice and check status:
 ```
-POST https://www.example.com/td0000002/rpc/accept/id
-GET https://www.example.com/td0000002/rpc/invoices?status=R_ACCEPTED
-GET https://www.example.com/sdi/rpc/invoices?status=E_ACCEPTED (no response yet)
+POST http://localhost:8081/td0000002/rpc/accept/id
+GET http://localhost:8081/td0000002/rpc/invoices?status=R_ACCEPTED
+GET http://localhost:8081/sdi/rpc/invoices?status=E_ACCEPTED (no response yet)
 ```
 
 11. force receiver to dispatch back the notification to the ES:
 ```
-POST https://www.example.com/td0000002/rpc/dispatch
+POST http://localhost:8081/td0000002/rpc/dispatch
 ```
 
 12. check notification and status:
 ```
-GET https://www.example.com/sdi/rpc/notifications/id
-GET https://www.example.com/sdi/rpc/invoices?status=E_ACCEPTED
-GET https://www.example.com/td0000002/rpc/invoices?status=I_ACCEPTED (no response yet)
+GET http://localhost:8081/sdi/rpc/notifications/id
+GET http://localhost:8081/sdi/rpc/invoices?status=E_ACCEPTED
+GET http://localhost:8081/td0000002/rpc/invoices?status=I_ACCEPTED (no response yet)
 ```
 
 13. force ES to dispatch back the acceptance notification to the issuer:
 ```
-POST https://www.example.com/sdi/rpc/dispatch
+POST http://localhost:8081/sdi/rpc/dispatch
 ```
 
 14. check notification and status:
 ```
-GET https://www.example.com/td0000001/rpc/notifications/id
-GET https://www.example.com/td0000002/rpc/invoices?status=I_ACCEPTED
+GET http://localhost:8081/td0000001/rpc/notifications/id
+GET http://localhost:8081/td0000002/rpc/invoices?status=I_ACCEPTED
 ```
 
 ## Testing
