@@ -19,3 +19,5 @@ all:
 
 	cp node_modules/bootstrap-italia/dist/css/bootstrap-italia.min.css src/public/css/.
 	cp node_modules/bootstrap-italia/dist/css/italia-icon-font.css src/public/css/.
+
+	cp node_modules/bootstrap-italia/dist/font/* src/public/font/.
