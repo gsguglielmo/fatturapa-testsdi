@@ -3,6 +3,8 @@ services:
   php:
     container_name: sdi_php
     build: .docker/php
+    depends_on:
+      - db
     volumes:
     - .:/app/
 
@@ -14,6 +16,8 @@ services:
   adminer:
     container_name: sdi_adminer
     image: adminer
+    depends_on:
+      - db
     restart: always
     ports:
     - 8082:8080
@@ -21,6 +25,8 @@ services:
   sdi:
     container_name: sdi_ui
     build: .docker/sdi
+    depends_on:
+      - db
     volumes:
     - .:/app/
     ports:

@@ -38,4 +38,6 @@ RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add - \
 
 EXPOSE 9000
 
-CMD ["php-fpm"]
+COPY entrypoint.sh /entrypoint.sh
+RUN ["chmod", "+x", "/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
